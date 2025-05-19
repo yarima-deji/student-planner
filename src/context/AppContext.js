@@ -1,131 +1,77 @@
 import React, { createContext, useReducer, useContext, useEffect } from "react";
 
-// Helpers: load from localStorage or provide defaults
-const loadSettings = () => {
-  try {
-    const saved = JSON.parse(localStorage.getItem("settings"));
-    return saved || {
-      notifications: true,
-      darkMode: false,
-      reminderLeadTime: "10 minutes",
-      quietHoursStart: "22:00",
-      quietHoursEnd: "07:00"
-    };
-  } catch {
-    return {
-      notifications: true,
-      darkMode: false,
-      reminderLeadTime: "10 minutes",
-      quietHoursStart: "22:00",
-      quietHoursEnd: "07:00"
-    };
-  }
-};
-
+// ——— INITIAL LOAD HELPERS ———
 const loadTasks = () => {
   try {
-    const saved = JSON.parse(localStorage.getItem("tasks"));
-    return Array.isArray(saved)
-      ? saved
-      : [
-          { id: 1, title: "Finish Math Homework", due: "Tomorrow", completed: false },
-          { id: 2, title: "Submit Project Report", due: "In 2 Days", completed: false }
-        ];
+    const raw = localStorage.getItem("tasks");
+    return raw ? JSON.parse(raw) : [];
   } catch {
-    return [
-      { id: 1, title: "Finish Math Homework", due: "Tomorrow", completed: false },
-      { id: 2, title: "Submit Project Report", due: "In 2 Days", completed: false }
-    ];
+    return [];
   }
 };
 
 const loadEvents = () => {
   try {
-    const saved = JSON.parse(localStorage.getItem("events"));
-    return Array.isArray(saved)
-      ? saved
-      : [
-          { id: 1, title: "Team Meeting", time: "Today at 3 PM" },
-          { id: 2, title: "Doctor Appointment", time: "Tomorrow at 10 AM" }
-        ];
+    const raw = localStorage.getItem("events");
+    return raw ? JSON.parse(raw) : [];
   } catch {
-    return [
-      { id: 1, title: "Team Meeting", time: "Today at 3 PM" },
-      { id: 2, title: "Doctor Appointment", time: "Tomorrow at 10 AM" }
-    ];
+    return [];
   }
 };
 
-// Initial global state
+const loadSettings = () => {
+  try {
+    const raw = localStorage.getItem("settings");
+    return raw
+      ? JSON.parse(raw)
+      : { notifications: true, darkMode: false };
+  } catch {
+    return { notifications: true, darkMode: false };
+  }
+};
+
+// ——— INITIAL STATE ———
 const initialState = {
   tasks: loadTasks(),
   events: loadEvents(),
-  settings: loadSettings()
+  settings: loadSettings(),
 };
 
-// Reducer to handle all actions
+// ——— REDUCER ———
 function appReducer(state, action) {
   switch (action.type) {
     case "ADD_TASK":
       return { ...state, tasks: [...state.tasks, action.payload] };
-
-    case "EDIT_TASK":
-      return {
-        ...state,
-        tasks: state.tasks.map(t =>
-          t.id === action.payload.id ? { ...t, ...action.payload } : t
-        )
-      };
-
-    case "DELETE_TASK":
-      return { ...state, tasks: state.tasks.filter(t => t.id !== action.payload) };
-
-    case "TOGGLE_TASK_COMPLETED":
-      return {
-        ...state,
-        tasks: state.tasks.map(t =>
-          t.id === action.payload ? { ...t, completed: !t.completed } : t
-        )
-      };
-
     case "ADD_EVENT":
       return { ...state, events: [...state.events, action.payload] };
-
-    case "TOGGLE_SETTING":
+    case "TOGGLE_NOTIFICATION":
       return {
         ...state,
         settings: {
           ...state.settings,
-          [action.payload]: !state.settings[action.payload]
-        }
+          notifications: !state.settings.notifications,
+        },
       };
-
-    case "UPDATE_SETTINGS":
+    case "TOGGLE_DARK_MODE":
       return {
         ...state,
         settings: {
           ...state.settings,
-          ...action.payload
-        }
+          darkMode: !state.settings.darkMode,
+        },
       };
-
     default:
       return state;
   }
 }
 
-// Create context
+// ——— CONTEXT & PROVIDER ———
 const AppContext = createContext();
 
-// Provider component
-export const AppProvider = ({ children }) => {
+export function AppProvider({ children }) {
   const [state, dispatch] = useReducer(appReducer, initialState);
 
-  // Persist slices to localStorage on change
-  useEffect(() => {
-    localStorage.setItem("settings", JSON.stringify(state.settings));
-  }, [state.settings]);
-
+  // Persist to localStorage whenever relevant state updates
   useEffect(() => {
     localStorage.setItem("tasks", JSON.stringify(state.tasks));
   }, [state.tasks]);
@@ -134,12 +80,22 @@ export const AppProvider = ({ children }) => {
     localStorage.setItem("events", JSON.stringify(state.events));
   }, [state.events]);
 
+  useEffect(() => {
+    localStorage.setItem("settings", JSON.stringify(state.settings));
+  }, [state.settings]);
+
   return (
     <AppContext.Provider value={{ state, dispatch }}>
       {children}
     </AppContext.Provider>
   );
-};
+}
 
-// Custom hook for consuming the context
-export const useAppContext = () => useContext(AppContext);
+// ——— CUSTOM HOOK ———
+export function useAppContext() {
+  const ctx = useContext(AppContext);
+  if (!ctx) {
+    throw new Error("useAppContext must be used within AppProvider");
+  }
+  return ctx;
+}
