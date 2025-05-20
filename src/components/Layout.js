@@ -1,3 +1,5 @@
+// src/components/Layout.js
+
 import React from "react";
 import PropTypes from "prop-types";
 import {
@@ -21,10 +23,12 @@ import ListAltIcon from "@mui/icons-material/ListAlt";
 import BarChartIcon from "@mui/icons-material/BarChart";
 import SettingsIcon from "@mui/icons-material/Settings";
 import { useNavigate, Routes, Route } from "react-router-dom";
-import Dashboard from "../Pages/Dashboard";
-import Tasks from "../Pages/Tasks";
-import Analytics from "../Pages/Analytics";
-import Settings from "../Pages/Settings";
+
+// pages (lowercase folder)
+import Dashboard from "../pages/Dashboard";
+import Tasks     from "../pages/Tasks";
+import Analytics from "../pages/Analytics";
+import Settings  from "../pages/Settings";
 
 const drawerWidth = 240;
 
@@ -32,13 +36,13 @@ export default function Layout({ window }) {
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const navigate = useNavigate();
 
-  const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
+  const handleDrawerToggle = () => setMobileOpen(open => !open);
 
   const menuItems = [
     { text: "Dashboard", icon: <DashboardIcon />, path: "/dashboard" },
-    { text: "Tasks", icon: <ListAltIcon />, path: "/tasks" },
-    { text: "Analytics", icon: <BarChartIcon />, path: "/analytics" },
-    { text: "Settings", icon: <SettingsIcon />, path: "/settings" }
+    { text: "Tasks",     icon: <ListAltIcon />,  path: "/tasks"    },
+    { text: "Analytics", icon: <BarChartIcon />, path: "/analytics"},
+    { text: "Settings",  icon: <SettingsIcon />, path: "/settings" }
   ];
 
   const drawer = (
@@ -46,16 +50,16 @@ export default function Layout({ window }) {
       <Toolbar />
       <Divider />
       <List>
-        {menuItems.map((item) => (
-          <ListItem button key={item.text} onClick={() => navigate(item.path)}>
-            <ListItemIcon>{item.icon}</ListItemIcon>
-            <ListItemText primary={item.text} />
+        {menuItems.map(({ text, icon, path }) => (
+          <ListItem button key={text} onClick={() => navigate(path)}>
+            <ListItemIcon>{icon}</ListItemIcon>
+            <ListItemText primary={text} />
           </ListItem>
         ))}
       </List>
       <Divider />
       <Box sx={{ textAlign: "center", mt: 4 }}>
-        <Button variant="outlined" onClick={() => {/* logout */}}>
+        <Button variant="outlined" onClick={() => {/* TODO: logout */}}>
           Logout
         </Button>
       </Box>
@@ -67,11 +71,12 @@ export default function Layout({ window }) {
   return (
     <Box sx={{ display: "flex" }}>
       <CssBaseline />
+
       <AppBar
         position="fixed"
         sx={{
           width: { sm: `calc(100% - ${drawerWidth}px)` },
-          ml: { sm: `${drawerWidth}px` }
+          ml:    { sm: `${drawerWidth}px` }
         }}
       >
         <Toolbar>
@@ -88,7 +93,13 @@ export default function Layout({ window }) {
           </Typography>
         </Toolbar>
       </AppBar>
-      <Box component="nav" sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}>
+
+      {/* Sidebar */}
+      <Box
+        component="nav"
+        sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
+        aria-label="main navigation"
+      >
         <Drawer
           container={container}
           variant="temporary"
@@ -102,6 +113,7 @@ export default function Layout({ window }) {
         >
           {drawer}
         </Drawer>
+
         <Drawer
           variant="permanent"
           sx={{
@@ -113,6 +125,8 @@ export default function Layout({ window }) {
           {drawer}
         </Drawer>
       </Box>
+
+      {/* Main content */}
       <Box
         component="main"
         sx={{
@@ -121,13 +135,13 @@ export default function Layout({ window }) {
           width: { sm: `calc(100% - ${drawerWidth}px)` }
         }}
       >
-        <Toolbar />
+        <Toolbar /> {/* spacer for fixed AppBar */}
         <Routes>
-          <Route path="/" element={<Dashboard />} />
+          <Route path="/"          element={<Dashboard />} />
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/tasks" element={<Tasks />} />
+          <Route path="/tasks"     element={<Tasks />}     />
           <Route path="/analytics" element={<Analytics />} />
-          <Route path="/settings" element={<Settings />} />
+          <Route path="/settings"  element={<Settings />}  />
         </Routes>
       </Box>
     </Box>
