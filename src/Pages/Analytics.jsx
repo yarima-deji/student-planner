@@ -1,36 +1,38 @@
 // src/pages/Analytics.jsx
 import React from "react";
-import { Box, Typography, Divider } from "@mui/material";
+import { Box, Typography, useTheme } from "@mui/material";
 import { Chart } from "react-google-charts";
 import { useAppContext } from "../context/AppContext";
-import { parseISO, format, subDays, isSameDay } from "date-fns";
 
 export default function Analytics() {
+  const theme = useTheme();
   const { state } = useAppContext();
   const { tasks } = state;
 
-  // 1) Pie: completed vs pending
-  const completedCount = tasks.filter((t) => t.completed).length;
+  // Count completed vs pending
+  const completedCount = tasks.filter(t => t.completed).length;
   const pendingCount   = tasks.length - completedCount;
-  const pieData = [
-    ["Status", "Count"],
-    ["Completed", completedCount],
-    ["Pending", pendingCount],
-  ];
 
-  // 2) Bar: last 7 days completed
+  // Build time‑series: last 7 days
   const today = new Date();
-  const days = Array.from({ length: 7 }, (_, i) => subDays(today, 6 - i));
-  const barData = [
-    ["Day", "Completed"],
-    ...days.map((day) => {
-      const count = tasks.filter((t) => {
-        if (!t.completed || !t.completedAt) return false;
-        return isSameDay(parseISO(t.completedAt), day);
-      }).length;
-      return [format(day, "EEE"), count];
-    }),
-  ];
+  const dayLabels = [...Array(7)].map((_, i) => {
+    const d = new Date();
+    d.setDate(today.getDate() - (6 - i));
+    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  });
+
+  const completedByDay = dayLabels.map(label => {
+    const target = new Date(label);
+    return tasks.filter(t => {
+      if (!t.completedAt) return false;
+      const d = new Date(t.completedAt);
+      return (
+        d.getDate() === target.getDate() &&
+        d.getMonth() === target.getMonth() &&
+        d.getFullYear() === target.getFullYear()
+      );
+    }).length;
+  });
 
   return (
     <Box sx={{ p: 3 }}>
@@ -38,38 +40,51 @@ export default function Analytics() {
         Progress & Analytics
       </Typography>
 
-      {/* Completed vs Pending */}
-      <Typography variant="h6" gutterBottom>
-        Task Status Breakdown
-      </Typography>
+      {/* Pie chart */}
       <Chart
-        width={"100%"}
-        height={300}
+        width={'100%'}
+        height={'300px'}
         chartType="PieChart"
-        data={pieData}
+        loader={<div>Loading…</div>}
+        data={[
+          ['Status', 'Count'],
+          ['Completed', completedCount],
+          ['Pending',   pendingCount],
+        ]}
         options={{
-          legend: { position: "bottom" },
-          chartArea: { width: "80%", height: "70%" },
+          legend: { position: 'bottom' },
+          backgroundColor: 'transparent',
+          pieSliceText: 'percentage',
+          slices: {
+            0: { color: theme.palette.primary.main },
+            1: { color: theme.palette.error.main },
+          },
         }}
       />
 
-      <Divider sx={{ my: 4 }} />
-
-      {/* Completed per Day */}
-      <Typography variant="h6" gutterBottom>
-        Tasks Completed Last 7 Days
-      </Typography>
-      <Chart
-        width={"100%"}
-        height={300}
-        chartType="ColumnChart"
-        data={barData}
-        options={{
-          legend: { position: "none" },
-          chartArea: { width: "80%", height: "70%" },
-          vAxis: { minValue: 0 },
-        }}
-      />
+      {/* Bar chart */}
+      <Box sx={{ mt: 4 }}>
+        <Typography variant="subtitle1" gutterBottom>
+          Tasks Completed Last 7 Days
+        </Typography>
+        <Chart
+          width={'100%'}
+          height={'300px'}
+          chartType="ColumnChart"
+          loader={<div>Loading…</div>}
+          data={[
+            ['Day', 'Completed'],
+            ...dayLabels.map((label, idx) => [label, completedByDay[idx]]),
+          ]}
+          options={{
+            backgroundColor: 'transparent',
+            legend: { position: 'none' },
+            hAxis: { title: 'Day' },
+            vAxis: { title: 'Count', minValue: 0 },
+            colors: [theme.palette.primary.main],
+          }}
+        />
+      </Box>
     </Box>
   );
 }

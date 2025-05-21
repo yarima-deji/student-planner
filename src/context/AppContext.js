@@ -86,23 +86,40 @@ function reducer(state, action) {
       return {
         ...state,
         tasks: state.tasks.map((t) =>
-          t.id === action.payload ? { ...t, completed: !t.completed,
-    completedAt: !t.completed ? new Date().toISOString() : t.completedAt
- } : t
+          t.id === action.payload
+            ? {
+                ...t,
+                completed: !t.completed,
+                completedAt: !t.completed ? new Date().toISOString() : t.completedAt,
+              }
+            : t
         ),
       };
+
     case "SET_TASK_PRIORITY":
-  return {
-    ...state,
-    tasks: state.tasks.map((t) =>
-      t.id === action.payload.id
-        ? { ...t, priority: action.payload.priority }
-        : t
-    ),
-  };
+      return {
+        ...state,
+        tasks: state.tasks.map((t) =>
+          t.id === action.payload.id
+            ? { ...t, priority: action.payload.priority }
+            : t
+        ),
+      };
+
     // Events CRUD
     case "ADD_EVENT":
-      return { ...state, events: [...state.events, action.payload] };
+      return {
+        ...state,
+        events: [
+          ...state.events,
+          {
+            ...action.payload,
+            // ensure every event has a completed flag
+            completed: action.payload.completed ?? false,
+            completedAt: action.payload.completedAt ?? null,
+          },
+        ],
+      };
 
     case "EDIT_EVENT":
       return {
@@ -116,6 +133,20 @@ function reducer(state, action) {
       return {
         ...state,
         events: state.events.filter((e) => e.id !== action.payload),
+      };
+
+    case "TOGGLE_EVENT_COMPLETED":
+      return {
+        ...state,
+        events: state.events.map((e) =>
+          e.id === action.payload
+            ? {
+                ...e,
+                completed: !e.completed,
+                completedAt: !e.completed ? new Date().toISOString() : e.completedAt,
+              }
+            : e
+        ),
       };
 
     default:

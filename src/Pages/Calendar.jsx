@@ -6,7 +6,7 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import { Box, Typography } from "@mui/material";
 import { useAppContext } from "../context/AppContext";
-import AddItemModal from "../components/AddEditModal";
+import AddEditModal from "../components/AddEditModal";
 
 export default function CalendarPage() {
   const { state, dispatch } = useAppContext();
@@ -37,6 +37,11 @@ export default function CalendarPage() {
     closeModal();
   };
 
+  const handleDelete = (id) => {
+    dispatch({ type: "DELETE_EVENT", payload: id });
+    closeModal();
+  };
+
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h4" gutterBottom>
@@ -56,10 +61,11 @@ export default function CalendarPage() {
         height="auto"
       />
 
-      <AddItemModal
+      <AddEditModal
         open={modalOpen}
         onClose={closeModal}
         onSubmit={handleSubmit}
+        onDelete={handleDelete}
         mode="event"
         itemToEdit={selectedEvent}
       />

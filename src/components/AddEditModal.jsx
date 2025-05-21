@@ -7,7 +7,7 @@ import {
   DialogContent,
   DialogActions,
   Button,
-  TextField
+  TextField,
 } from "@mui/material";
 import { v4 as uuidv4 } from "uuid";
 
@@ -16,15 +16,17 @@ export default function AddEditModal({
   onClose,
   onSubmit,
   mode,
-  itemToEdit
+  itemToEdit,
+  onDelete,
+  onToggleComplete,
 }) {
   const [title, setTitle] = useState("");
   const [datetime, setDatetime] = useState("");
 
-  // When editing an existing item, prefill the inputs
+  // Prefill when editing
   useEffect(() => {
     if (itemToEdit) {
-      setTitle(itemToEdit.title);
+      setTitle(itemToEdit.title || "");
       setDatetime(itemToEdit.due ?? itemToEdit.time ?? "");
     } else {
       setTitle("");
@@ -35,19 +37,24 @@ export default function AddEditModal({
   const handleSave = () => {
     const newItem = {
       id: itemToEdit?.id || uuidv4(),
-      title,
-      // use "due" for tasks, "time" for events
-      ...(mode === "task" ? { due: datetime } : { time: datetime })
+      title: title.trim(),
+      ...(mode === "task" ? { due: datetime } : { time: datetime }),
     };
     onSubmit(newItem);
     onClose();
   };
 
+  const isTask = mode === "task";
+  const canToggle = isTask && typeof itemToEdit?.completed === "boolean";
+
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
       <DialogTitle>
-        {itemToEdit ? `Edit ${mode === "task" ? "Task" : "Event"}` : `Add New ${mode === "task" ? "Task" : "Event"}`}
+        {itemToEdit
+          ? `Edit ${isTask ? "Task" : "Event"}`
+          : `Add New ${isTask ? "Task" : "Event"}`}
       </DialogTitle>
+
       <DialogContent dividers>
         <TextField
           fullWidth
@@ -59,16 +66,44 @@ export default function AddEditModal({
         <TextField
           fullWidth
           margin="normal"
-          label={mode === "task" ? "Due Date & Time" : "Event Date & Time"}
+          label={isTask ? "Due Date & Time" : "Event Date & Time"}
           type="datetime-local"
           value={datetime}
           onChange={(e) => setDatetime(e.target.value)}
           InputLabelProps={{ shrink: true }}
         />
       </DialogContent>
+
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
-        <Button onClick={handleSave} variant="contained" disabled={!title || !datetime}>
+
+        {itemToEdit?.id && (
+          <>
+            {onDelete && (
+              <Button color="error" onClick={() => {
+                onDelete(itemToEdit.id);
+                onClose();
+              }}>
+                Delete
+              </Button>
+            )}
+
+            {canToggle && onToggleComplete && (
+              <Button onClick={() => {
+                onToggleComplete(itemToEdit.id);
+                onClose();
+              }}>
+                {itemToEdit.completed ? "Mark Incomplete" : "Mark Complete"}
+              </Button>
+            )}
+          </>
+        )}
+
+        <Button
+          onClick={handleSave}
+          variant="contained"
+          disabled={!title.trim() || !datetime}
+        >
           Save
         </Button>
       </DialogActions>
